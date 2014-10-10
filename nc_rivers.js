@@ -10,53 +10,51 @@
         maxZoom: 18
     }).addTo(map);
 
-    omnivore.topojson('NHDArea.json').on('ready', function() {
+    omnivore.topojson('NHDArea.json').on('ready', function() { // wrap d3 code in omnivore's ready function
+        var svg = d3.select("svg"),
+            g = svg.append("g").attr("class", "leaflet-zoom-hide");
 
-    // Add an SVG element to Leaflet’s overlay pane
-    var svg = d3.select("svg"),
-        g = svg.append("g").attr("class", "leaflet-zoom-hide");
+        d3.tsv('nc_sites.tsv', function(d) {
+            var points = d;
 
-    d3.tsv('nc_sites.tsv', function(d) {
-        var points = d;
+            d3.tsv('current1.tsv', function(f) {
+                var flow = f;
 
-        d3.tsv('current1.tsv', function(f) {
-            var flow = f;
+                // Add in flow rate from current file for each station
+                for(var i= 0, j=points.length; i<j; i++) {
+                    points[i].flow = flow[i].result_va;
+                    points[i].LatLng = new L.LatLng(points[i].dec_lat, points[i].dec_long);
+                }
 
-            // Add in flow rate from current file for each station
-            for(var i= 0, j=points.length; i<j; i++) {
-                points[i].flow = flow[i].result_va;
-                points[i].LatLng = new L.LatLng(points[i].dec_lat, points[i].dec_long);
-            }
+                var feature = g.selectAll("circle")
+                    .data(points)
+                    .enter().append("circle")
+                    .attr("r", 5)
+                    .on("mouseover", function(d) {
+                        div.transition()
+                            .duration(200)
+                            .style("opacity", .9);
 
-            var feature = g.selectAll("circle")
-                .data(points)
-                .enter().append("circle")
-                .attr("r", 5)
-                .on("mouseover", function(d) {
-                    div.transition()
-                        .duration(200)
-                        .style("opacity", .9);
+                        div.html("The flow rate is " + d.flow + " ft3/s as measured at<br /> station: " + d.station_nm)
+                            .style("left", (d3.event.pageX - 8) + "px")
+                            .style("top", (d3.event.pageY - 8) + "px")
+                    }).on("mouseout", function() {
+                         div.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    });
 
-                    div.html("The flow rate is " + d.flow + " ft3/s as measured at<br /> station: " + d.station_nm)
-                        .style("left", (d3.event.pageX - 8) + "px")
-                        .style("top", (d3.event.pageY - 8) + "px")
-                }).on("mouseout", function() {
-                     div.transition()
-                        .duration(500)
-                        .style("opacity", 0);
-                });
+                map.on("viewreset", update);
+                update();
 
-            map.on("viewreset", update);
-            update();
-
-            function update() {
-                feature.attr("transform", function(d) {
-                    return "translate("+
-                        map.latLngToLayerPoint(d.LatLng).x +","+
-                        map.latLngToLayerPoint(d.LatLng).y +")";
-                });
-            }
+                function update() {
+                    feature.attr("transform", function(d) {
+                        return "translate("+
+                            map.latLngToLayerPoint(d.LatLng).x +","+
+                            map.latLngToLayerPoint(d.LatLng).y +")";
+                    });
+                }
+            });
         });
-    });
-        }).addTo(map);
+    }).addTo(map);
 })();
