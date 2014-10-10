@@ -10,9 +10,10 @@
         maxZoom: 18
     }).addTo(map);
 
+    omnivore.topojson('NHDArea.json').on('ready', function() {
 
     // Add an SVG element to Leaflet’s overlay pane
-    var svg = d3.select(map.getPanes().overlayPane).append("svg").attr("width", "1500").attr("height", "800"),
+    var svg = d3.select("svg"),
         g = svg.append("g").attr("class", "leaflet-zoom-hide");
 
     d3.tsv('nc_sites.tsv', function(d) {
@@ -57,4 +58,5 @@
             }
         });
     });
+        }).addTo(map);
 })();
